@@ -1,0 +1,168 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Analytics from '@vercel/analytics/astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  includeLocalBusinessSchema?: boolean;
+}
+
+const {
+  title,
+  description = 'Premium in-home personal training for professionals and retirees 40+ across the Main Line and western Philadelphia suburbs.',
+  ogImage = '/logo.png',
+  includeLocalBusinessSchema = false,
+} = Astro.props;
+
+const siteOrigin = Astro.site ?? new URL('https://capalditraining.com');
+const canonical = new URL(Astro.url.pathname, siteOrigin).toString();
+const ogImageUrl = new URL(ogImage, siteOrigin).toString();
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Capaldi Training',
+  description,
+  url: siteOrigin.toString(),
+  image: ogImageUrl,
+  priceRange: '$$$',
+  areaServed: [
+    'Conshohocken, PA',
+    'Blue Bell, PA',
+    'Wayne, PA',
+    'Villanova, PA',
+    'Ardmore, PA',
+    'Bryn Mawr, PA',
+    'Radnor, PA',
+  ],
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Conshohocken',
+    addressRegion: 'PA',
+    addressCountry: 'US',
+  },
+  founder: { '@type': 'Person', name: 'Andy Capaldi' },
+};
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="canonical" href={canonical} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:site_name" content="Capaldi Training" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    {includeLocalBusinessSchema && (
+      <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+    )}
+  </head>
+  <body class="bg-ink text-cream font-sans">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-gold focus:text-ink focus:px-4 focus:py-2 focus:rounded-md">Skip to content</a>
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <Analytics />
+
+    <script is:inline>
+      (function () {
+        if (typeof window === 'undefined') return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('reveal-visible');
+                observer.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+        );
+        const run = () => document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', run);
+        } else {
+          run();
+        }
+      })();
+    </script>
+
+    <script>
+      import { gsap } from 'gsap';
+
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function initMagnetic() {
+        if (prefersReduced) return;
+        const magnets = document.querySelectorAll<HTMLElement>('.magnetic');
+        magnets.forEach((el) => {
+          const strength = 0.25;
+          el.addEventListener('mousemove', (e) => {
+            const rect = el.getBoundingClientRect();
+            const x = (e.clientX - rect.left - rect.width / 2) * strength;
+            const y = (e.clientY - rect.top - rect.height / 2) * strength;
+            gsap.to(el, { x, y, duration: 0.4, ease: 'power3.out' });
+          });
+          el.addEventListener('mouseleave', () => {
+            gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+          });
+        });
+      }
+
+      function initHeroSplit() {
+        const el = document.querySelector<HTMLElement>('.hero-h1-split');
+        if (!el || prefersReduced) return;
+        const rawHtml = el.innerHTML;
+        const tokens = rawHtml.split(/(<[^>]+>|\s+|&nbsp;)/).filter(Boolean);
+        el.innerHTML = tokens
+          .map((t) => {
+            if (t.startsWith('<')) return t;
+            if (/^\s+$/.test(t) || t === '&nbsp;') return t;
+            return `<span class="hero-word" style="display:inline-block;opacity:0;transform:translateY(24px);">${t}</span>`;
+          })
+          .join('');
+        const words = el.querySelectorAll('.hero-word');
+        gsap.to(words, {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          ease: 'power3.out',
+          stagger: 0.06,
+          delay: 0.15,
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          initMagnetic();
+          initHeroSplit();
+        });
+      } else {
+        initMagnetic();
+        initHeroSplit();
+      }
+    </script>
+  </body>
+</html>
