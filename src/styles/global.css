@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/fraunces/wght-italic.css";
+@import "@fontsource-variable/inter";
+
+@theme {
+  --color-ink: #0a0a0a;
+  --color-ink-raised: #141414;
+  --color-ink-deep: #080808;
+  --color-cream: #f5f1ea;
+  --color-stone: #9a938a;
+  --color-gold: #d4a24c;
+  --color-gold-lift: #e5b660;
+  --color-gold-soft: rgba(212, 162, 76, 0.08);
+  --color-line: #2a2622;
+
+  --font-serif: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --tracking-eyebrow: 0.12em;
+  --tracking-headline: -0.02em;
+  --tracking-headline-tight: -0.03em;
+
+  --leading-headline: 1.05;
+  --leading-subhead: 1.2;
+  --leading-body: 1.7;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-ink);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: var(--tracking-headline);
+    line-height: var(--leading-headline);
+  }
+
+  p {
+    line-height: var(--leading-body);
+  }
+}
+
+@utility eyebrow {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-gold);
+}
+
+@utility reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 800ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@utility reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
