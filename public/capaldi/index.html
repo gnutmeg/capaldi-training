@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151922">
+<title>Capaldi — House Deck</title>
+</head>
+<body>
+<style>
+/* Single dark theme by design: this is a card table at night. */
+:root{
+  --table:#151922; --table-deep:#0c0f15;
+  --surface:#1d2330; --line:#2b3345;
+  --paper:#f4f0e6; --ink:#191c25;
+  --text:#ece9df; --dim:#8d93a5;
+  --red:#e5484d; --yellow:#f2b90d; --green:#2fa96c; --blue:#3e63dd;
+  --disp:ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold","Hiragino Maru Gothic ProN",system-ui,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;font-family:var(--body);color:var(--text);
+  background:radial-gradient(120% 90% at 50% 20%,var(--table) 0%,var(--table-deep) 100%) fixed;
+  touch-action:manipulation;overscroll-behavior:none;
+}
+button{font-family:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:600px;margin:0 auto;user-select:none;-webkit-user-select:none}
+
+/* ---------- header ---------- */
+#hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px}
+#hdr .mark{font-family:var(--disp);font-weight:800;letter-spacing:.06em;font-size:15px}
+#hdr .mark i{font-style:normal;display:inline-block;width:.5em;height:.5em;border-radius:2px;margin-right:6px;background:conic-gradient(from 45deg,var(--red) 0 25%,var(--blue) 0 50%,var(--green) 0 75%,var(--yellow) 0);transform:rotate(45deg)}
+#lobbyBtn{font-size:12px;font-weight:700;color:var(--dim);padding:7px 12px;border:1px solid var(--line);border-radius:99px}
+#lobbyBtn:active{color:var(--text)}
+
+/* ---------- seats ---------- */
+#chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:6px 10px}
+.chip{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;width:62px;padding:7px 2px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.chip .av{font-size:20px;line-height:1.15}
+.chip .nm{font-size:10px;font-weight:700;color:var(--dim);max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .ct{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;background:var(--table-deep);border-radius:99px;padding:1px 8px;margin-top:2px}
+.chip.you .nm{color:var(--yellow)}
+.chip.active{border-color:var(--paper);background:#262d3d}
+@media (prefers-reduced-motion:no-preference){
+  .chip.active{animation:seatpulse 1.4s ease-in-out infinite}
+  @keyframes seatpulse{50%{box-shadow:0 0 0 3px rgba(244,240,230,.22)}}
+}
+.chip .shout{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-4deg);background:var(--yellow);color:var(--ink);font-family:var(--disp);font-weight:800;font-size:10px;letter-spacing:.04em;padding:2px 7px;border-radius:8px;white-space:nowrap;z-index:2}
+
+/* ---------- table ---------- */
+#table{flex:1;display:flex;align-items:center;justify-content:center;gap:26px;min-height:0}
+.pilewrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+.pilelabel{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+#drawpile{position:relative}
+#drawpile .card{box-shadow:inset 0 0 0 3px rgba(244,240,230,.9),inset 0 0 0 5px rgba(0,0,0,.18),2px 3px 0 #0a0c11,4px 6px 0 #10131b}
+@media (prefers-reduced-motion:no-preference){
+  #drawpile.hint .card{animation:deckpulse 1.2s ease-in-out infinite}
+  @keyframes deckpulse{50%{transform:translateY(-4px)}}
+}
+#discard{position:relative}
+#discard .card{transform:rotate(3deg);box-shadow:inset 0 0 0 3px rgba(244,240,230,.9),inset 0 0 0 5px rgba(0,0,0,.18),-2px 3px 0 #0a0c11,-4px 6px 0 #10131b}
+#pend{position:absolute;top:-14px;right:-14px;z-index:3;background:var(--red);color:var(--paper);font-family:var(--disp);font-weight:800;font-size:15px;padding:4px 10px;border-radius:99px;transform:rotate(6deg)}
+@media (prefers-reduced-motion:no-preference){#pend{animation:pendpop 1s ease-in-out infinite}@keyframes pendpop{50%{transform:rotate(6deg) scale(1.12)}}}
+#dirwrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+#dir{font-size:26px;color:var(--dim)}
+#colordot{width:16px;height:16px;border-radius:50%;border:2px solid var(--paper)}
+
+/* ---------- status ---------- */
+#status{padding:2px 20px 6px;text-align:center;min-height:44px}
+#log{font-size:13px;font-weight:600}
+#hint{font-size:12px;color:var(--dim);margin-top:2px}
+#actionRow{display:flex;justify-content:center;padding:0 16px 6px;min-height:0}
+#actionRow .bigbtn{background:var(--red);color:var(--paper);font-family:var(--disp);font-weight:800;font-size:15px;padding:10px 22px;border-radius:99px;box-shadow:0 3px 0 #8c2226}
+#actionRow .bigbtn:active{transform:translateY(2px);box-shadow:none}
+
+/* ---------- cards ---------- */
+.card{
+  position:relative;flex:0 0 auto;width:76px;aspect-ratio:5/7;border-radius:9px;
+  font-size:11px;font-family:var(--disp);
+  background:var(--cardc,#22242e);
+  box-shadow:inset 0 0 0 3px rgba(244,240,230,.9),inset 0 0 0 5px rgba(0,0,0,.18);
+}
+.card.big{width:118px;font-size:17px;border-radius:12px}
+.c-red{--cardc:var(--red)} .c-yellow{--cardc:var(--yellow)} .c-green{--cardc:var(--green)} .c-blue{--cardc:var(--blue)}
+.card .pip{position:absolute;inset:20% 15%;background:rgba(244,240,230,.94);transform:rotate(6deg);border-radius:26% / 20%}
+.c-wild .pip{background:conic-gradient(from 45deg,var(--red) 0 25%,var(--blue) 0 50%,var(--green) 0 75%,var(--yellow) 0);box-shadow:inset 0 0 0 2px rgba(244,240,230,.9)}
+.card .glyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:2.5em;color:color-mix(in srgb,var(--cardc,#fff) 72%, #14161d)}
+.c-wild .glyph{color:var(--paper);text-shadow:0 2px 4px rgba(0,0,0,.55)}
+.card .crn{position:absolute;font-weight:800;font-size:1em;color:var(--paper);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.card .crn.tl{top:6%;left:9%}
+.card .crn.br{bottom:6%;right:9%;transform:rotate(180deg)}
+.card.custom .glyph{font-size:2.1em;text-shadow:none}
+.card .tag{position:absolute;left:7%;right:7%;bottom:8%;text-align:center;font-weight:800;font-size:.62em;line-height:1.25;color:var(--ink);background:rgba(244,240,230,.94);border-radius:5px;padding:2px 2px}
+.c-wild .tag{color:var(--ink)}
+.card.c-back .pip{inset:26% 20%;transform:rotate(6deg)}
+.card.c-back .backmark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:2.4em;color:var(--paper);text-shadow:0 2px 3px rgba(0,0,0,.6)}
+
+/* ---------- hand ---------- */
+#handwrap{padding:20px 0 max(10px, env(safe-area-inset-bottom))}
+#hand{display:flex;overflow-x:auto;padding:14px 18px 4px;scrollbar-width:none}
+#hand::-webkit-scrollbar{display:none}
+#hand .card{margin-left:-30px;transition:transform .15s ease,filter .15s ease}
+#hand .card:first-child{margin-left:0}
+#hand .card.ok{transform:translateY(-12px);outline:3px solid rgba(244,240,230,.85);outline-offset:1px;z-index:1}
+#hand .card.no{filter:brightness(.5) saturate(.6)}
+#handmeta{display:flex;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:var(--dim);padding-top:8px}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;background:rgba(7,9,13,.78);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;width:min(430px,100%);max-height:92dvh;overflow-y:auto}
+.sheet h2{font-family:var(--disp);font-weight:800;font-size:19px;margin:0 0 4px;letter-spacing:.01em;text-wrap:balance}
+.sheet .sub{font-size:13px;color:var(--dim);margin:0 0 16px;line-height:1.45}
+.btn{display:block;width:100%;text-align:center;font-family:var(--disp);font-weight:800;font-size:16px;padding:13px;border-radius:14px;margin-top:10px}
+.btn.primary{background:var(--yellow);color:var(--ink);box-shadow:0 3px 0 #a87e00}
+.btn.primary:active{transform:translateY(2px);box-shadow:none}
+.btn.ghost{border:1px solid var(--line);color:var(--dim)}
+.btn.ghost:active{color:var(--text)}
+.swatches{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.swatch{aspect-ratio:2/1.15;border-radius:14px;font-family:var(--disp);font-weight:800;font-size:15px;color:var(--paper);text-shadow:0 1px 3px rgba(0,0,0,.4);box-shadow:inset 0 0 0 3px rgba(244,240,230,.55)}
+.swatch:active{transform:scale(.96)}
+.targetrow{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:14px;margin-top:8px;text-align:left}
+.targetrow:active{background:#262d3d}
+.targetrow .av{font-size:24px}
+.targetrow .nm{flex:1;font-weight:700;font-size:15px}
+.targetrow .ct{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.cardpreview{display:flex;justify-content:center;padding:6px 0 14px}
+
+/* ---------- lobby ---------- */
+#lobby{align-items:flex-start;overflow-y:auto;background:radial-gradient(120% 90% at 50% 10%,var(--table) 0%,var(--table-deep) 100%)}
+#lobby .sheet{background:none;border:0;max-height:none;padding:26px 22px 40px}
+#logo{font-family:var(--disp);font-weight:800;font-size:clamp(44px,13vw,62px);letter-spacing:.02em;line-height:.95;color:var(--paper);transform:rotate(-2.5deg);text-shadow:3px 3px 0 var(--red),6px 6px 0 rgba(62,99,221,.55);margin:12px 0 6px}
+#logobar{display:flex;gap:5px;margin:14px 0 6px;transform:rotate(-2.5deg)}
+#logobar i{width:26px;height:7px;border-radius:4px}
+#tagline{font-size:14px;color:var(--dim);margin:0 0 26px;line-height:1.5}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+.field input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:16px;font-weight:700;padding:12px 14px;font-family:inherit}
+.field input:focus{outline:2px solid var(--yellow);outline-offset:1px}
+.stepper{display:flex;align-items:center;gap:16px}
+.stepper button{width:46px;height:46px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:22px;font-weight:800}
+.stepper button:active{background:#262d3d}
+.stepper .val{font-family:var(--disp);font-weight:800;font-size:22px;min-width:110px;text-align:center;font-variant-numeric:tabular-nums}
+.stepper .val small{display:block;font-size:11px;color:var(--dim);font-weight:700}
+.ballot{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 14px 14px 16px;margin-top:10px}
+.ballot .row{display:flex;align-items:center;gap:12px}
+.ballot .name{flex:1;font-family:var(--disp);font-weight:800;font-size:15px}
+.ballot .desc{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:6px}
+.vote{min-width:58px;padding:8px 0;border-radius:99px;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.06em;background:var(--table-deep);color:var(--dim);border:1px solid var(--line)}
+.vote.on{background:var(--green);color:var(--paper);border-color:transparent}
+#packPreview{display:flex;gap:10px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
+#packPreview .card{width:64px;font-size:9.5px}
+#startBtn{margin-top:26px;font-size:18px;padding:16px}
+.fineprint{font-size:11.5px;color:var(--dim);line-height:1.55;margin-top:14px}
+
+/* ---------- win ---------- */
+#winSheet{text-align:center;position:relative;overflow:hidden}
+#winAv{font-size:56px;margin-top:6px}
+#winTitle{font-family:var(--disp);font-weight:800;font-size:26px;margin:8px 0 2px}
+#winSub{font-size:13px;color:var(--dim);margin-bottom:14px}
+.standings{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
+.standings div{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--dim);padding:0 10px}
+.standings b{color:var(--text);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:no-preference){
+  .confetti{position:absolute;top:-12px;width:9px;height:9px;border-radius:2px;animation:fall 2.6s linear infinite}
+  @keyframes fall{to{transform:translateY(480px) rotate(540deg)}}
+}
+@media (prefers-reduced-motion:reduce){.confetti{display:none}}
+.hidden{display:none !important}
+</style>
+
+<div id="app">
+  <div id="hdr">
+    <span class="mark"><i></i>CAPALDI</span>
+    <button id="lobbyBtn">Lobby</button>
+  </div>
+  <div id="chips"></div>
+  <div id="table">
+    <div class="pilewrap">
+      <div id="drawpile"></div>
+      <div class="pilelabel" id="drawlabel">Draw</div>
+    </div>
+    <div id="dirwrap">
+      <div id="dir">⟳</div>
+      <div id="colordot"></div>
+    </div>
+    <div class="pilewrap">
+      <div id="discard"></div>
+      <div class="pilelabel">Pile</div>
+    </div>
+  </div>
+  <div id="status"><div id="log"></div><div id="hint"></div></div>
+  <div id="actionRow"></div>
+  <div id="handwrap"><div id="hand"></div><div id="handmeta"></div></div>
+</div>
+
+<div id="lobby" class="overlay">
+  <div class="sheet">
+    <div id="logo">CAPALDI</div>
+    <div id="logobar"></div>
+    <p id="tagline">The house deck. Like the card game you know — except the deck is ours, the rules get voted on, and Kyle's mood is a game mechanic. Prototype 0.1: you vs. bots.</p>
+    <div class="field"><label for="nameIn">Your name</label><input id="nameIn" maxlength="14" autocomplete="off" value="Andy"></div>
+    <div class="field"><label>Seats at the table</label>
+      <div class="stepper">
+        <button id="seatDown" aria-label="Fewer players">−</button>
+        <div class="val" id="seatVal"></div>
+        <button id="seatUp" aria-label="More players">+</button>
+      </div>
+    </div>
+    <div class="field" style="margin-top:26px"><label>House-rule ballot</label>
+      <p class="sub" style="margin:0 0 4px">In the real version the whole lobby votes on these before the cards hit the table. Tonight you're the entire electorate.</p>
+      <div id="ballots"></div>
+    </div>
+    <button id="startBtn" class="btn primary">Deal me in</button>
+    <p class="fineprint">Test build: bots fill every seat but yours, nothing is saved, and one card left auto-shouts “CAPALDI!” for you. Accounts, real friends, and the SQLite backend come later.</p>
+  </div>
+</div>
+
+<div id="modal" class="overlay hidden"><div class="sheet" id="modalSheet"></div></div>
+
+<div id="win" class="overlay hidden">
+  <div class="sheet" id="winSheet">
+    <div id="winFx"></div>
+    <div id="winAv"></div>
+    <div id="winTitle"></div>
+    <div id="winSub"></div>
+    <div class="standings" id="standings"></div>
+    <button id="againBtn" class="btn primary">Run it back</button>
+    <button id="rulesBtn" class="btn ghost">Change the rules</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   CAPALDI — house-deck card game, prototype 0.1
+   ---------------------------------------------------------------------
+   HOW CARDS WORK (read this before adding one):
+   A card is plain data. Its behavior is the list of `effects` it fires,
+   and every effect is one of the primitives in EFFECTS below. Most new
+   card ideas are just a new combination of existing primitives — paste
+   a new entry into CAPALDI_PACK and it's in the deck. Only a genuinely
+   new mechanic ("rotate hands" was one) needs a new EFFECTS entry.
+
+   Card fields:
+     key      match identity — same key matches same key, like numbers
+     color    'red'|'yellow'|'green'|'blue'|'wild'|'each' (each = 1/color)
+     glyph    big center text, or `art` for an emoji (custom art later)
+     corner   small index in the corners
+     effects  [{t:'draw',n:2}, ...] — see EFFECTS
+     needs    choices the player makes first: 'color', 'target'
+     stack    if set, card can answer a pending draw stack for +n more
+     copies   how many go in the deck (custom cards only)
+   ===================================================================== */
+
+const COLORS=['red','yellow','green','blue'];
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+
+function baseDeck(){
+  const d=[];
+  const num=(c,n)=>({key:'n'+n,color:c,glyph:String(n),corner:String(n),name:cap(c)+' '+n,effects:[]});
+  for(const c of COLORS){
+    d.push(num(c,0));
+    for(let n=1;n<=9;n++) d.push(num(c,n),num(c,n));
+    for(let i=0;i<2;i++){
+      d.push({key:'skip',color:c,glyph:'⊘',corner:'⊘',name:cap(c)+' Skip',effects:[{t:'skip',n:1}]});
+      d.push({key:'rev',color:c,glyph:'⇄',corner:'⇄',name:cap(c)+' Reverse',effects:[{t:'reverse'}]});
+      d.push({key:'d2',color:c,glyph:'+2',corner:'+2',name:cap(c)+' Draw 2',stack:2,effects:[{t:'draw',n:2}]});
+    }
+  }
+  for(let i=0;i<4;i++){
+    d.push({key:'wild',color:'wild',glyph:'',corner:'W',name:'Wild',needs:['color'],effects:[]});
+    d.push({key:'wild4',color:'wild',glyph:'+4',corner:'+4',name:'Wild Draw 4',stack:4,needs:['color'],effects:[{t:'draw',n:4}]});
+  }
+  return d;
+}
+
+/* ------------------- CAPALDI PACK v0 — paste new cards here ------------------- */
+const CAPALDI_PACK=[
+  {key:'kb',color:'wild',art:'😤',corner:'+4',name:"Killer Boy's in a Bad Mood",custom:true,copies:4,
+   needs:['target','color'],effects:[{t:'targetDraw',n:4}],
+   desc:'Pick anyone at the table. Kyle’s mood is now their problem: they draw 4.'},
+  {key:'chairs',color:'wild',art:'🪑',corner:'⟳',name:'Musical Chairs',custom:true,copies:3,
+   needs:['color'],effects:[{t:'rotateHands'}],
+   desc:'Every hand slides one seat in the direction of play. Reverse first if you’re feeling evil.'},
+  {key:'gc',color:'each',art:'💬',corner:'+1',name:'Group Chat Blows Up',custom:true,copies:1,
+   effects:[{t:'allOthersDraw',n:1}],
+   desc:'Everyone else draws 1. You started it.'},
+];
+
+/* ------------------- house rules on the ballot ------------------- */
+const RULE_DEFS=[
+  {key:'stacking',name:'Stack It',on:true,
+   desc:'Hit with a draw card? Answer with your own draw card and the whole pile passes to the next player — it grows until someone can’t answer and eats it all.'},
+  {key:'capaldi',name:'Capaldi Pack v0',on:true,pack:true,
+   desc:'Adds the house cards below. Every future inside joke lands in this section of the deck.'},
+  {key:'drawToMatch',name:'No Mercy Draws',on:false,
+   desc:'Can’t play? You don’t draw one and shrug — you keep drawing until you find something that plays.'},
+];
+
+const BOTS=[['Kyle','😤'],['Beans','🫘'],['Tina','🦖'],['Moose','🫎'],['Ghost','👻'],['Snacks','🍿'],['Lil P','🅿️'],['Dozer','😴'],['Wizard','🧙']];
+let BOT_MS=900;
+
+/* ------------------- effect primitives: the whole rulebook ------------------- */
+const EFFECTS={
+  draw(e,ctx){ const was=S.pending; S.pending+=e.n; if(was>0) log(`The stack grows to +${S.pending}!`); },
+  skip(e,ctx){ ctx.skips+=e.n||1; },
+  reverse(e,ctx){ S.dir*=-1; if(S.players.length===2) ctx.skips+=1; },
+  targetDraw(e,ctx){ deal(ctx.ch.target,e.n); log(`${ctx.p.name} sics Killer Boy on ${ctx.ch.target.name} — draw ${e.n}!`); },
+  allOthersDraw(e,ctx){ for(const q of S.players) if(q!==ctx.p) deal(q,e.n); log(`${ctx.p.name} blows up the group chat — everyone else draws ${e.n}`); },
+  rotateHands(e,ctx){
+    const n=S.players.length, hands=S.players.map(p=>p.hand);
+    S.players.forEach((p,i)=>{ S.players[(i+S.dir+n)%n].hand=hands[i]; });
+    log(`Musical chairs! Every hand slides one seat ${S.dir===1?'clockwise':'counter-clockwise'}`);
+    S.players.forEach(p=>{ if(p.hand.length===1) shout(p); });
+  },
+};
+
+/* ------------------- state ------------------- */
+let S=null;
+const SETTINGS={name:'Andy',seats:4,rules:{}};
+RULE_DEFS.forEach(r=>SETTINGS.rules[r.key]=r.on);
+
+const $=s=>document.querySelector(s);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function buildDeck(rules){
+  let d=baseDeck();
+  if(rules.capaldi){
+    for(const c of CAPALDI_PACK){
+      const colors=c.color==='each'?COLORS:[c.color];
+      for(const col of colors) for(let i=0;i<c.copies;i++) d.push({...c,color:col===c.color?c.color:col});
+    }
+  }
+  return shuffle(d.map((c,i)=>({...c,uid:i})));
+}
+
+function newGame(){
+  clearTimeout(S&&S.timer);
+  const players=[{name:SETTINGS.name||'You',avatar:'😎',isBot:false,hand:[]}];
+  for(let i=0;i<SETTINGS.seats-1;i++) players.push({name:BOTS[i][0],avatar:BOTS[i][1],isBot:true,hand:[]});
+  S={players,dir:1,turn:0,pending:0,draw:buildDeck(SETTINGS.rules),discard:[],
+     color:'red',rules:{...SETTINGS.rules},phase:'play',timer:null,logs:[]};
+  for(const p of players) deal(p,7);
+  const i=S.draw.findIndex(c=>c.key[0]==='n'&&c.key.length<=2);
+  const first=S.draw.splice(i,1)[0];
+  S.discard.push(first); S.color=first.color;
+  $('#win').classList.add('hidden'); $('#modal').classList.add('hidden');
+  log(`Fresh deal — ${players[0].name} leads off`);
+  startTurn();
+}
+
+/* ------------------- core helpers ------------------- */
+const cur=()=>S.players[S.turn];
+const topCard=()=>S.discard[S.discard.length-1];
+const nextIdx=(i,steps)=>{const n=S.players.length;return ((i+S.dir*steps)%n+n)%n;};
+const advance=steps=>{S.turn=nextIdx(S.turn,steps);};
+const isHumanTurn=()=>S.phase==='play'&&!cur().isBot;
+
+function deal(p,n){
+  for(let i=0;i<n;i++){
+    if(!S.draw.length) reshuffle();
+    if(!S.draw.length) return;
+    p.hand.push(S.draw.pop());
+  }
+}
+function dealOne(p){ if(!S.draw.length) reshuffle(); if(!S.draw.length) return null; const c=S.draw.pop(); p.hand.push(c); return c; }
+function reshuffle(){ if(S.discard.length<2) return; const t=S.discard.pop(); S.draw=shuffle(S.discard); S.discard=[t]; }
+
+const matches=c=>c.color==='wild'||c.color===S.color||c.key===topCard().key;
+function playablesFor(p){
+  if(S.pending>0) return S.rules.stacking?p.hand.filter(c=>c.stack):[];
+  return p.hand.filter(matches);
+}
+
+function log(msg){ S.logs.push(msg); if(S.logs.length>30) S.logs.shift(); }
+function shout(p){ p.shoutAt=Date.now(); setTimeout(render,2600); }
+
+function cardLabel(c,ch){
+  let s=c.name;
+  if(c.color==='wild'&&ch&&ch.color) s+=` → ${cap(ch.color)}`;
+  return s;
+}
+
+/* ------------------- turn engine ------------------- */
+function startTurn(){
+  if(S.phase!=='play') return;
+  render();
+  if(cur().isBot) S.timer=setTimeout(()=>botAct(),BOT_MS*(0.8+Math.random()*0.5));
+}
+
+function commitPlay(pIdx,cardIdx,ch){
+  const p=S.players[pIdx];
+  const card=p.hand.splice(cardIdx,1)[0];
+  S.discard.push(card);
+  S.color=card.color==='wild'?(ch&&ch.color||S.color):card.color;
+  log(`${p.name} plays ${cardLabel(card,ch)}`);
+  if(p.hand.length===0) return endRound(p);
+  const ctx={p,card,ch:ch||{},skips:0};
+  for(const e of card.effects) EFFECTS[e.t](e,ctx);
+  if(p.hand.length===1) shout(p);
+  advance(1+ctx.skips);
+  startTurn();
+}
+
+function resolvePending(p){
+  log(`${p.name} eats the stack — draws ${S.pending}`);
+  deal(p,S.pending); S.pending=0;
+  advance(1); startTurn();
+}
+
+/* ------------------- bots ------------------- */
+function botChoices(p,card){
+  const ch={};
+  if(card.needs){
+    if(card.needs.includes('color')){
+      const tally={}; for(const c of p.hand) if(c.color!=='wild'&&c!==card) tally[c.color]=(tally[c.color]||0)+1;
+      ch.color=COLORS.slice().sort((a,b)=>(tally[b]||0)-(tally[a]||0))[0];
+    }
+    if(card.needs.includes('target')){
+      ch.target=S.players.filter(q=>q!==p).sort((a,b)=>a.hand.length-b.hand.length)[0];
+    }
+  }
+  return ch;
+}
+function botPick(p,opts){
+  const colored=opts.filter(c=>c.color!=='wild');
+  const pool=colored.length?colored:opts;
+  return pool[Math.random()*pool.length|0];
+}
+function botAct(force){
+  if(S.phase!=='play') return;
+  const p=cur();
+  if(!force&&!p.isBot) return;
+  const opts=playablesFor(p);
+  if(S.pending>0){
+    if(opts.length){ const c=opts.slice().sort((a,b)=>b.stack-a.stack)[0]; return commitPlay(S.turn,p.hand.indexOf(c),botChoices(p,c)); }
+    return resolvePending(p);
+  }
+  if(opts.length){ const c=botPick(p,opts); return commitPlay(S.turn,p.hand.indexOf(c),botChoices(p,c)); }
+  if(S.rules.drawToMatch){
+    let k=0,c=null;
+    while(k<40){ c=dealOne(p); if(!c) break; k++; if(matches(c)) break; c=null; }
+    log(`${p.name} digs through ${k} card${k===1?'':'s'}`);
+    if(c) return commitPlay(S.turn,p.hand.indexOf(c),botChoices(p,c));
+  }else{
+    const c=dealOne(p);
+    if(c&&matches(c)){ log(`${p.name} draws — and plays it`); return commitPlay(S.turn,p.hand.indexOf(c),botChoices(p,c)); }
+    log(`${p.name} draws and keeps it`);
+  }
+  advance(1); startTurn();
+}
+
+/* ------------------- human input ------------------- */
+function humanPlay(idx){
+  const p=S.players[0], card=p.hand[idx];
+  const needs=(card.needs||[]).slice(), ch={};
+  (function step(){
+    const n=needs.shift();
+    if(!n) return commitPlay(0,idx,ch);
+    if(n==='color') openColor(card,c=>{ch.color=c;step();});
+    else if(n==='target') openTarget(card,t=>{ch.target=t;step();});
+  })();
+}
+
+function humanDraw(){
+  if(!isHumanTurn()) return;
+  const p=S.players[0];
+  if(S.pending>0) return resolvePending(p);
+  if(S.rules.drawToMatch){
+    let k=0,c=null;
+    while(k<40){ c=dealOne(p); if(!c) break; k++; if(matches(c)) break; c=null; }
+    log(`You dig through ${k} card${k===1?'':'s'}`); render();
+    if(c) return askKeepPlay(c);
+  }else{
+    const c=dealOne(p); render();
+    if(c&&matches(c)) return askKeepPlay(c);
+    log('Nothing doing — you keep it');
+  }
+  advance(1); startTurn();
+}
+
+/* ------------------- modals ------------------- */
+function openModal(html){ $('#modalSheet').innerHTML=html; $('#modal').classList.remove('hidden'); }
+function closeModal(){ $('#modal').classList.add('hidden'); }
+
+function openColor(card,cb){
+  openModal(`<h2>Call the color</h2><p class="sub">${card.name} — the table follows whatever you pick.</p><div class="swatches"></div>`);
+  const w=$('#modalSheet .swatches');
+  for(const c of COLORS){
+    const b=document.createElement('button');
+    b.className='swatch'; b.style.background=`var(--${c})`; b.textContent=cap(c);
+    b.onclick=()=>{closeModal();cb(c);};
+    w.appendChild(b);
+  }
+}
+function openTarget(card,cb){
+  openModal(`<h2>${card.name}</h2><p class="sub">${card.desc||'Pick your victim.'}</p><div class="targets"></div>`);
+  const w=$('#modalSheet .targets');
+  for(const q of S.players){
+    if(q===S.players[0]) continue;
+    const b=document.createElement('button');
+    b.className='targetrow';
+    b.innerHTML=`<span class="av">${q.avatar}</span><span class="nm">${q.name}</span><span class="ct">${q.hand.length} cards</span>`;
+    b.onclick=()=>{closeModal();cb(q);};
+    w.appendChild(b);
+  }
+}
+function askKeepPlay(c){
+  openModal(`<h2>You drew ${c.name}</h2><p class="sub">It plays. Throw it down or hold onto it?</p><div class="cardpreview"></div>
+    <button class="btn primary" id="mPlay">Play it</button><button class="btn ghost" id="mKeep">Keep it</button>`);
+  $('#modalSheet .cardpreview').appendChild(cardEl(c,'big'));
+  $('#mPlay').onclick=()=>{closeModal();humanPlay(S.players[0].hand.indexOf(c));};
+  $('#mKeep').onclick=()=>{closeModal();advance(1);startTurn();};
+}
+
+/* ------------------- round end ------------------- */
+function endRound(w){
+  S.phase='over'; render();
+  $('#winAv').textContent=w.avatar;
+  $('#winTitle').textContent=`${w.name} wins!`;
+  $('#winSub').textContent=w.isBot?'A bot beat the group chat. Unacceptable.':'CAPALDI! Called it.';
+  $('#standings').innerHTML=S.players.filter(p=>p!==w)
+    .map(p=>`<div><span>${p.avatar} ${p.name}</span><b>${p.hand.length} left</b></div>`).join('');
+  const fx=$('#winFx'); fx.innerHTML='';
+  for(let i=0;i<14;i++){
+    const s=document.createElement('span');
+    s.className='confetti';
+    s.style.cssText=`left:${Math.random()*100}%;background:var(--${COLORS[i%4]});animation-delay:${Math.random()*2}s`;
+    fx.appendChild(s);
+  }
+  $('#win').classList.remove('hidden');
+}
+
+/* ------------------- rendering ------------------- */
+function cardEl(c,cls){
+  const el=document.createElement('div');
+  el.className=`card c-${c.color} ${cls||''} ${c.custom?'custom':''}`;
+  el.innerHTML=`<span class="crn tl">${c.corner}</span><span class="pip"></span>
+    <span class="glyph">${c.art||c.glyph||''}</span>
+    ${c.custom?`<span class="tag">${c.name}</span>`:''}
+    <span class="crn br">${c.corner}</span>`;
+  return el;
+}
+function backEl(cls){
+  const el=document.createElement('div');
+  el.className=`card c-back ${cls||''}`;
+  el.innerHTML=`<span class="pip" style="background:conic-gradient(from 45deg,var(--red) 0 25%,var(--blue) 0 50%,var(--green) 0 75%,var(--yellow) 0)"></span><span class="backmark">C</span>`;
+  return el;
+}
+
+function render(){
+  if(!S) return;
+  const me=S.players[0], human=isHumanTurn();
+  // seats
+  const chips=$('#chips'); chips.innerHTML='';
+  S.players.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className=`chip ${i===S.turn&&S.phase==='play'?'active':''} ${p.isBot?'':'you'}`;
+    const shouting=p.shoutAt&&Date.now()-p.shoutAt<2500;
+    d.innerHTML=`${shouting?'<span class="shout">CAPALDI!</span>':''}
+      <span class="av">${p.avatar}</span><span class="nm">${p.isBot?p.name:'You'}</span><span class="ct">${p.hand.length}</span>`;
+    chips.appendChild(d);
+  });
+  // piles
+  const dp=$('#drawpile'); dp.innerHTML=''; dp.appendChild(backEl());
+  dp.classList.toggle('hint',human&&S.pending===0&&playablesFor(me).length===0);
+  dp.onclick=humanDraw;
+  $('#drawlabel').textContent=`Draw · ${S.draw.length}`;
+  const dc=$('#discard'); dc.innerHTML='';
+  dc.appendChild(cardEl(topCard(),'big'));
+  if(S.pending>0){ const b=document.createElement('div'); b.id='pend'; b.textContent='+'+S.pending; dc.appendChild(b); }
+  $('#dir').textContent=S.dir===1?'⟳':'⟲';
+  $('#colordot').style.background=`var(--${S.color})`;
+  // status
+  $('#log').textContent=S.logs[S.logs.length-1]||'';
+  let hint='';
+  if(S.phase!=='play') hint='Round over';
+  else if(!human) hint=`${cur().name} is thinking…`;
+  else if(S.pending>0) hint=S.rules.stacking&&playablesFor(me).length
+    ? 'Stack it or eat it — play a draw card, or take the pile'
+    : `You're stuck — take the +${S.pending}`;
+  else hint=playablesFor(me).length?'Your turn — tap a bright card, or the deck to draw':'Your turn — nothing plays, tap the deck';
+  $('#hint').textContent=hint;
+  // action row
+  const ar=$('#actionRow'); ar.innerHTML='';
+  if(human&&S.pending>0){
+    const b=document.createElement('button');
+    b.className='bigbtn'; b.textContent=`Draw +${S.pending}`;
+    b.onclick=()=>resolvePending(me);
+    ar.appendChild(b);
+  }
+  // hand
+  const hd=$('#hand'); hd.innerHTML='';
+  const ok=new Set(human?playablesFor(me):[]);
+  me.hand.forEach((c,i)=>{
+    const el=cardEl(c,ok.has(c)?'ok':(human?'no':''));
+    el.onclick=()=>{ if(human&&ok.has(c)) humanPlay(i); };
+    hd.appendChild(el);
+  });
+  $('#handmeta').textContent=`Your hand · ${me.hand.length}`;
+}
+
+/* ------------------- lobby ------------------- */
+function renderLobby(){
+  $('#logobar').innerHTML=COLORS.map(c=>`<i style="background:var(--${c})"></i>`).join('');
+  $('#seatVal').innerHTML=`${SETTINGS.seats}<small>you + ${SETTINGS.seats-1} bot${SETTINGS.seats>2?'s':''}</small>`;
+  const bs=$('#ballots'); bs.innerHTML='';
+  for(const r of RULE_DEFS){
+    const d=document.createElement('div'); d.className='ballot';
+    d.innerHTML=`<div class="row"><span class="name">${r.name}</span>
+      <button class="vote ${SETTINGS.rules[r.key]?'on':''}">${SETTINGS.rules[r.key]?'IN':'OUT'}</button></div>
+      <div class="desc">${r.desc}</div>${r.pack?'<div id="packPreview"></div>':''}`;
+    d.querySelector('.vote').onclick=()=>{SETTINGS.rules[r.key]=!SETTINGS.rules[r.key];renderLobby();};
+    bs.appendChild(d);
+  }
+  const pv=$('#packPreview');
+  if(pv) for(const c of CAPALDI_PACK) pv.appendChild(cardEl({...c,color:c.color==='each'?'red':c.color}));
+}
+
+$('#seatDown').onclick=()=>{SETTINGS.seats=Math.max(2,SETTINGS.seats-1);renderLobby();};
+$('#seatUp').onclick=()=>{SETTINGS.seats=Math.min(10,SETTINGS.seats+1);renderLobby();};
+$('#startBtn').onclick=()=>{SETTINGS.name=$('#nameIn').value.trim()||'You';$('#lobby').classList.add('hidden');newGame();};
+$('#lobbyBtn').onclick=()=>{clearTimeout(S&&S.timer);if(S)S.phase='paused';$('#win').classList.add('hidden');$('#lobby').classList.remove('hidden');renderLobby();};
+$('#againBtn').onclick=()=>newGame();
+$('#rulesBtn').onclick=()=>{$('#win').classList.add('hidden');$('#lobby').classList.remove('hidden');renderLobby();};
+
+renderLobby();
+
+/* Debug handle — lets you (or a test) poke the game from the console. */
+window.G={
+  get state(){return S;},
+  auto(){botAct(true);},
+  setSpeed(ms){BOT_MS=ms;},
+};
+</script>
+</body>
+</html>
